@@ -11,7 +11,6 @@ def calculate_schedule_emissions(equipment, details, switchover, production, ste
     merged['emissions_electricity'] = merged['total_electricity_consumed'] * elec_ef
     merged['emissions_steam'] = merged['total_steam_consumed'] * steam_ef
 
-    # Switchover emissions
     switch_electricity = []
     switch_steam = []
     prev_prod = None
@@ -43,19 +42,21 @@ def calculate_schedule_emissions(equipment, details, switchover, production, ste
     return merged
 
 def optimize_schedule(
-    equipment, details, switchover, production, steam_ef, elec_ef, allowed_time_var=0.1, max_permutations=5040
+    equipment, details, switchover, production, steam_ef, elec_ef, allowed_time_var=0.1
 ):
-    # For small numbers, brute-force all permutations
     n = len(production)
     if n > 7:
-        raise ValueError("Too many products for brute-force optimization. Use a heuristic for larger cases.")
-
+        raise ValueError("Too many products for brute-force optimization.")
     original_time = schedule_total_time(production, details)
     min_time = original_time * (1 - allowed_time_var)
     max_time = original_time * (1 + allowed_time_var)
 
-    best_emissions = np.inf
-    best_schedule = None
+    # Calculate base emissions for reference
+    base_emissions_df = calculate_schedule_emissions(equipment, details, switchover, production, steam_ef, elec_ef)
+    base_total_emissions = base_emissions_df['total_emissions'].sum()
+
+    best_emissions = base_total_emissions
+    best_schedule = production.copy()
 
     prod_rows = production.to_dict('records')
     for perm in permutations(prod_rows):
@@ -69,7 +70,4 @@ def optimize_schedule(
             best_emissions = total_emissions
             best_schedule = test_schedule.copy()
 
-    if best_schedule is not None:
-        return best_schedule.reset_index(drop=True)
-    else:
-        return production  # Fallback if no schedule meets constraints
+    return best_schedule.reset_index(drop=True)
