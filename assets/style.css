@@ -1,6 +1,4 @@
-/* === Consulting-grade Dashboard Theme: Orange, White, Grey === */
-
-/* Palette */
+/* Consulting-grade Dashboard Theme: Orange, White, Grey */
 :root {
   --main-orange: #FF7900;
   --light-orange: #FFE5CC;
@@ -10,32 +8,21 @@
   --white: #FFFFFF;
 }
 
-/* General Body */
 body, .dash-app {
   background-color: var(--light-grey);
   font-family: 'Segoe UI', 'Roboto', 'Arial', sans-serif;
   color: var(--main-grey);
 }
 
-/* Headings */
 h1, h2, h3, h4 {
   color: var(--main-orange);
   letter-spacing: 1px;
   font-weight: 700;
 }
 
-h1 {
-  font-size: 2.2rem;
-  margin-bottom: 0.5rem;
-}
+h1 { font-size: 2.2rem; margin-bottom: 0.5rem; }
+h2 { font-size: 1.6rem; margin-top: 1.5rem; margin-bottom: 0.5rem; }
 
-h2 {
-  font-size: 1.6rem;
-  margin-top: 1.5rem;
-  margin-bottom: 0.5rem;
-}
-
-/* Section styling */
 hr {
   border: 0;
   height: 1px;
@@ -49,8 +36,7 @@ label {
   margin-top: 0.8em;
 }
 
-/* Buttons */
-button, .dash-button, input[type="submit"] {
+button, .main-btn, .upload-btn, input[type="submit"] {
   background-color: var(--main-orange);
   color: var(--white);
   border: none;
@@ -64,11 +50,10 @@ button, .dash-button, input[type="submit"] {
   cursor: pointer;
 }
 
-button:hover, .dash-button:hover, input[type="submit"]:hover {
+button:hover, .main-btn:hover, .upload-btn:hover, input[type="submit"]:hover {
   background-color: #e67300;
 }
 
-/* Inputs & Selects */
 input, select, .Select-control, .dash-dropdown {
   border: 1px solid var(--mid-grey);
   border-radius: 4px;
@@ -79,7 +64,6 @@ input, select, .Select-control, .dash-dropdown {
   color: var(--main-grey);
 }
 
-/* DataTable: orange accent, white background, grey grid */
 .dash-table-container .dash-spreadsheet-container {
   background: var(--white);
   border-radius: 8px;
@@ -112,7 +96,6 @@ input, select, .Select-control, .dash-dropdown {
   background: var(--white);
 }
 
-/* Graphs: override Plotly default colors */
 .js-plotly-plot .plotly {
   background: var(--white) !important;
   border-radius: 10px;
@@ -127,7 +110,6 @@ input, select, .Select-control, .dash-dropdown {
   fill: var(--main-grey) !important;
 }
 
-/* Upload section */
 .dcc-Upload {
   border: 2px dashed var(--main-orange);
   background: var(--light-orange);
@@ -151,7 +133,6 @@ input, select, .Select-control, .dash-dropdown {
   font-weight: 500;
 }
 
-/* Responsive Layout */
 @media (max-width: 700px) {
   .dash-table-container th, .dash-table-container td {
     padding: 0.4em 0.5em;
