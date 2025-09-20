@@ -57,10 +57,16 @@ app.layout = html.Div([
     html.Label("Steam Emission Factor (kg CO2 / kg steam)"),
     dcc.Input(id='steam-ef', type='number', value=0.5, step=0.01, style={'margin-right': '30px'}),
     html.Label("Allowed Schedule Time Variation (+/- %, default 10%)"),
-    dcc.Slider(id='time-var', min=0, max=0.5, step=0.01, value=0.1,
-               marks={0: '0%', 0.1: '10%', 0.2: '20%', 0.5: '50%'},
-               tooltip={"placement": "bottom", "always_visible": True},
-               style={'width': '350px', 'display': 'inline-block', 'verticalAlign': 'middle'}),
+    dcc.Slider(
+        id='time-var',
+        min=0,
+        max=0.5,
+        step=0.01,
+        value=0.1,
+        marks={'0': '0%', '0.1': '10%', '0.2': '20%', '0.5': '50%'},
+        tooltip={"placement": "bottom", "always_visible": True},
+        style={'width': '350px', 'display': 'inline-block', 'verticalAlign': 'middle'}
+    ),
     html.Br(),
 
     html.Button("Calculate Emissions", id='calc-btn', n_clicks=0, className='main-btn'),
@@ -171,10 +177,18 @@ def run_emissions(calc_clicks, opt_clicks, equip, det, sw, prod, elec_ef, steam_
         style_header={'backgroundColor': '#FFE5CC', 'fontWeight': 'bold', "color": "#3C3C3B"},
         style_data={'backgroundColor': '#FFFFFF', "color": "#3C3C3B"},
     )
-    fig = px.bar(results, x='product_code', y=['emissions_electricity','emissions_steam','switchover_emissions_electricity','switchover_emissions_steam'],
-                 title=f'Total Emissions by Product (Total: {total:.2f} kg CO2)',
-                 color_discrete_sequence=["#FF7900", "#BABABA", "#FFB380", "#3C3C3B"])
-    fig.update_layout(plot_bgcolor="#ffffff", paper_bgcolor="#ffffff", font_color="#3C3C3B")
+    fig = px.bar(
+        results,
+        x='product_code',
+        y=['emissions_electricity','emissions_steam','switchover_emissions_electricity','switchover_emissions_steam'],
+        title=f'Total Emissions by Product (Total: {total:.2f} kg CO2)',
+        color_discrete_sequence=["#FF7900", "#BABABA", "#FFB380", "#3C3C3B"]
+    )
+    fig.update_layout(
+        plot_bgcolor="#ffffff",
+        paper_bgcolor="#ffffff",
+        font_color="#3C3C3B"
+    )
     return table, fig
 
 if __name__ == '__main__':
