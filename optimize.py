@@ -27,10 +27,8 @@ def calculate_batch_emissions(
     merged['emissions_electricity'] = merged['total_electricity_consumed'] * elec_ef
     merged['emissions_steam'] = merged['total_steam_consumed'] * steam_ef
 
-    # Switchover emissions
     switchover_electricity = []
     switchover_steam = []
-    prev_prod = None
     for i, row in merged.iterrows():
         if i == 0:
             switchover_electricity.append(0)
@@ -43,8 +41,8 @@ def calculate_batch_emissions(
                 (switchover['product_code'] == curr_prod) & (switchover['switch_type'] == sw_type)
             ]
             if not sw_row.empty:
-                sw_elec = sw_row['electricity'].values[0]
-                sw_steam = sw_row['steam'].values[0]
+                sw_elec = sw_row.iloc[0]['electricity']
+                sw_steam = sw_row.iloc[0]['steam']
             else:
                 sw_elec = 0
                 sw_steam = 0
@@ -53,10 +51,11 @@ def calculate_batch_emissions(
     merged['switchover_emissions_electricity'] = switchover_electricity
     merged['switchover_emissions_steam'] = switchover_steam
     merged['total_emissions'] = (
-        merged['emissions_electricity'] + merged['emissions_steam'] +
-        merged['switchover_emissions_electricity'] + merged['switchover_emissions_steam']
+        merged['emissions_electricity'] +
+        merged['emissions_steam'] +
+        merged['switchover_emissions_electricity'] +
+        merged['switchover_emissions_steam']
     )
-    merged['running_hours'] = merged['running_hours']
     return merged
 
 def total_running_time(df: pd.DataFrame) -> float:
@@ -69,7 +68,6 @@ def greedy_schedule(
     steam_ef: float,
     elec_ef: float,
 ) -> List[int]:
-    # Greedily build a schedule by picking next batch with lowest incremental emissions
     remaining = all_batches.index.tolist()
     schedule = []
     last_prod = None
@@ -80,7 +78,6 @@ def greedy_schedule(
         for idx in remaining:
             batch = all_batches.loc[[idx]]
             merged = batch.merge(details, on='product_code', how='left')
-            # Switchover
             if not schedule:
                 sw_elec = sw_steam = 0
             else:
@@ -90,11 +87,10 @@ def greedy_schedule(
                     (switchover['product_code'] == curr_prod) & (switchover['switch_type'] == sw_type)
                 ]
                 if not sw_row.empty:
-                    sw_elec = sw_row['electricity'].values[0] * elec_ef
-                    sw_steam = sw_row['steam'].values[0] * steam_ef
+                    sw_elec = sw_row.iloc[0]['electricity'] * elec_ef
+                    sw_steam = sw_row.iloc[0]['steam'] * steam_ef
                 else:
                     sw_elec = sw_steam = 0
-            # Process emissions
             elec = merged.iloc[0]['total_electricity_consumed'] * elec_ef
             steam = merged.iloc[0]['total_steam_consumed'] * steam_ef
             total_e = elec + steam + sw_elec + sw_steam
@@ -116,7 +112,6 @@ def two_opt_local_search(
     allowed_time_var: float,
     orig_time: float
 ) -> List[int]:
-    # 2-opt swap to improve the greedy result
     improved = True
     best_schedule = schedule.copy()
     best_emissions = calculate_batch_emissions(
@@ -150,18 +145,15 @@ def optimize_batch_schedule(
     steam_ef: float,
     elec_ef: float,
     allowed_time_var: float = 0.1,
-) -> Tuple[pd.DataFrame, pd.DataFrame]:
+):
     # 1. Expand production into batches
     batch_df = batch_expand(production, details)
-    N = len(batch_df)
     # 2. Calculate original emissions and total time
     orig_schedule = batch_df.copy()
     orig_emissions_df = calculate_batch_emissions(orig_schedule, details, switchover, steam_ef, elec_ef)
     orig_total_time = orig_emissions_df['running_hours'].sum()
     # 3. Greedy solution
     greedy_idx = greedy_schedule(batch_df, details, switchover, steam_ef, elec_ef)
-    greedy_schedule_df = batch_df.loc[greedy_idx].reset_index(drop=True)
-    greedy_emissions_df = calculate_batch_emissions(greedy_schedule_df, details, switchover, steam_ef, elec_ef)
     # 4. Local search (2-opt)
     best_idx = two_opt_local_search(
         greedy_idx, batch_df, details, switchover, steam_ef, elec_ef, allowed_time_var, orig_total_time
