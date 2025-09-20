@@ -1,20 +1,13 @@
 import pandas as pd
 
-def load_data(equipment_path, details_path, switchover_path, production_path):
-    equipment = pd.read_csv(equipment_path)
-    details = pd.read_csv(details_path)
-    switchover = pd.read_csv(switchover_path)
-    production = pd.read_csv(production_path)
-    return equipment, details, switchover, production
-
 def calculate_schedule_emissions(equipment, details, switchover, production, steam_ef, elec_ef):
     # Merge production with details to get relevant info
     merged = production.merge(details, on='product_code', suffixes=('', '_details'))
-    
+
     # Emissions for production
     merged['emissions_electricity'] = merged['total_electricity_consumed'] * elec_ef
     merged['emissions_steam'] = merged['total_steam_consumed'] * steam_ef
-    
+
     # Switchover emissions
     switch_emissions = []
     prev_prod = None
