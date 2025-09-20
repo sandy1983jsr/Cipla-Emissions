@@ -58,14 +58,14 @@ app.layout = html.Div([
     dcc.Input(id='steam-ef', type='number', value=0.5, step=0.01, style={'margin-right': '30px'}),
     html.Label("Allowed Schedule Time Variation (+/- %, default 10%)"),
     dcc.Slider(
-        id='time-var',
-        min=0,
-        max=0.5,
-        step=0.01,
-        value=0.1,
-        marks={'0': '0%', '0.1': '10%', '0.2': '20%', '0.5': '50%'},
-        tooltip={"placement": "bottom", "always_visible": True},
-        style={'width': '350px', 'display': 'inline-block', 'verticalAlign': 'middle'}
+    id='time-var',
+    min=0,
+    max=50,
+    step=1,
+    value=10,
+    marks={'0': '0%', '10': '10%', '20': '20%', '50': '50%'},
+    tooltip={"placement": "bottom", "always_visible": True},
+    style={'width': '350px', 'display': 'inline-block', 'verticalAlign': 'middle'}
     ),
     html.Br(),
 
