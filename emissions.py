@@ -7,7 +7,6 @@ def calculate_batch_emissions(
     steam_ef: float,
     elec_ef: float
 ) -> pd.DataFrame:
-    # Attach details for each batch
     merged = batch_schedule.merge(details, on='product_code', how='left')
     merged['emissions_electricity'] = merged['total_electricity_consumed'] * elec_ef
     merged['emissions_steam'] = merged['total_steam_consumed'] * steam_ef
