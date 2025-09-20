@@ -1,8 +1,24 @@
 import pandas as pd
 import numpy as np
+from emissions import calculate_batch_emissions
+
+def batch_expand(production, details):
+    """
+    Expand the production plan into a DataFrame where each row is a single batch.
+    """
+    batches = []
+    for _, row in production.iterrows():
+        prod_code = row['product_code']
+        n_batches = int(row['number_of_batches'])
+        for batch_num in range(n_batches):
+            batches.append({
+                'product_code': prod_code,
+                'batch_num': batch_num + 1
+            })
+    batch_df = pd.DataFrame(batches)
+    return batch_df
 
 def calculate_total_emissions(schedule, details, switchover, steam_ef, elec_ef):
-    # Use your existing calculate_batch_emissions logic here!
     emissions_df = calculate_batch_emissions(schedule, details, switchover, steam_ef, elec_ef)
     return emissions_df['total_emissions'].sum(), emissions_df
 
