@@ -3,7 +3,6 @@ import numpy as np
 from typing import Tuple, List
 
 def batch_expand(production: pd.DataFrame, details: pd.DataFrame) -> pd.DataFrame:
-    # Expand each product into individual batches
     all_batches = []
     for _, row in production.iterrows():
         prod_code = row['product_code']
@@ -22,7 +21,6 @@ def calculate_batch_emissions(
     steam_ef: float,
     elec_ef: float
 ) -> pd.DataFrame:
-    # Attach details for each batch
     merged = batch_schedule.merge(details, on='product_code', how='left')
     merged['emissions_electricity'] = merged['total_electricity_consumed'] * elec_ef
     merged['emissions_steam'] = merged['total_steam_consumed'] * steam_ef
@@ -135,7 +133,6 @@ def two_opt_local_search(
                     best_schedule = new_schedule
                     best_emissions = total_emissions
                     improved = True
-        # If no improvement, loop exits
     return best_schedule
 
 def optimize_batch_schedule(
@@ -146,15 +143,11 @@ def optimize_batch_schedule(
     elec_ef: float,
     allowed_time_var: float = 0.1,
 ):
-    # 1. Expand production into batches
     batch_df = batch_expand(production, details)
-    # 2. Calculate original emissions and total time
     orig_schedule = batch_df.copy()
     orig_emissions_df = calculate_batch_emissions(orig_schedule, details, switchover, steam_ef, elec_ef)
     orig_total_time = orig_emissions_df['running_hours'].sum()
-    # 3. Greedy solution
     greedy_idx = greedy_schedule(batch_df, details, switchover, steam_ef, elec_ef)
-    # 4. Local search (2-opt)
     best_idx = two_opt_local_search(
         greedy_idx, batch_df, details, switchover, steam_ef, elec_ef, allowed_time_var, orig_total_time
     )
