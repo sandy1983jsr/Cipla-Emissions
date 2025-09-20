@@ -2,7 +2,6 @@ import streamlit as st
 import pandas as pd
 import numpy as np
 import plotly.express as px
-from io import StringIO
 
 st.title("Indore-Unit-4 Emissions Forecast & Optimization")
 
@@ -71,7 +70,7 @@ def calculate_schedule_emissions(equipment, details, switchover, production, ste
     merged['emissions_electricity'] = merged['total_electricity_consumed'] * elec_ef
     merged['emissions_steam'] = merged['total_steam_consumed'] * steam_ef
 
-    # Switchover emissions (very simple logic: always add product switchover for 2nd+ product)
+    # Switchover emissions (simple logic: always add product switchover for 2nd+ product)
     switch_emissions = []
     prev_prod = None
     for i, row in merged.iterrows():
@@ -118,35 +117,40 @@ def optimize_schedule(equipment, details, switchover, production, steam_ef, elec
     # For demo, just reverse order. Replace with actual logic!
     return production.iloc[::-1].reset_index(drop=True)
 
-# --- Main Actions ---
-if st.button("Calculate Emissions"):
-    results = calculate_schedule_emissions(equipment, details, switchover, production, steam_ef, elec_ef)
-    total = total_emissions(results)
-    st.subheader(f"Original Total CO₂ Emissions for Facility: {total:.2f} kg")
-    st.dataframe(results[['product_code', 'name', 'number_of_batches', 'total_emissions']])
+# --- Calculate for both scenarios ---
+results_base = calculate_schedule_emissions(equipment, details, switchover, production, steam_ef, elec_ef)
+total_base = total_emissions(results_base)
+
+opt_production = optimize_schedule(equipment, details, switchover, production, steam_ef, elec_ef, allowed_time_var)
+results_opt = calculate_schedule_emissions(equipment, details, switchover, opt_production, steam_ef, elec_ef)
+total_opt = total_emissions(results_opt)
+
+# --- Show dashboards side by side ---
+col1, col2 = st.columns(2)
+with col1:
+    st.header("Base Schedule")
+    st.metric("Total Facility Emissions (kg CO₂)", f"{total_base:.2f}")
+    st.dataframe(results_base[['product_code', 'name', 'number_of_batches', 'total_emissions']])
     fig = px.bar(
-        results,
+        results_base,
         x='product_code',
         y=['emissions_electricity', 'emissions_steam', 'switchover_emissions_electricity', 'switchover_emissions_steam'],
-        title=f'Total Emissions by Product (Total: {total:.2f} kg CO2)',
+        title='Emissions by Product',
         barmode='group'
     )
     st.plotly_chart(fig, use_container_width=True)
 
-if st.button("Optimize Schedule & Calculate Emissions"):
-    opt_production = optimize_schedule(equipment, details, switchover, production, steam_ef, elec_ef, allowed_time_var)
-    results_opt = calculate_schedule_emissions(equipment, details, switchover, opt_production, steam_ef, elec_ef)
-    total_opt = total_emissions(results_opt)
-    st.subheader(f"Optimized Total CO₂ Emissions for Facility: {total_opt:.2f} kg")
-    st.dataframe(opt_production)
-    csv = opt_production.to_csv(index=False)
-    st.download_button("Download Optimized Schedule as CSV", csv, file_name="optimized_production.csv", mime="text/csv")
+with col2:
+    st.header("Optimized Schedule")
+    st.metric("Total Facility Emissions (kg CO₂)", f"{total_opt:.2f}")
     st.dataframe(results_opt[['product_code', 'name', 'number_of_batches', 'total_emissions']])
-    fig_opt = px.bar(
+    fig2 = px.bar(
         results_opt,
         x='product_code',
         y=['emissions_electricity', 'emissions_steam', 'switchover_emissions_electricity', 'switchover_emissions_steam'],
-        title=f'Total Emissions by Product (Optimized: {total_opt:.2f} kg CO2)',
+        title='Emissions by Product (Optimized)',
         barmode='group'
     )
-    st.plotly_chart(fig_opt, use_container_width=True)
+    st.plotly_chart(fig2, use_container_width=True)
+    csv = opt_production.to_csv(index=False)
+    st.download_button("Download Optimized Schedule as CSV", csv, file_name="optimized_production.csv", mime="text/csv")
