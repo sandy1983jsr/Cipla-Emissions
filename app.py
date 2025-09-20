@@ -1,47 +1,39 @@
 import streamlit as st
 import pandas as pd
-import numpy as np
 import plotly.express as px
 
 from emissions import calculate_batch_emissions, total_facility_emissions
 from optimize import optimize_batch_schedule
 
+def load_random_sample():
+    try:
+        details = pd.read_csv("details.csv")
+        switchover = pd.read_csv("switchover.csv")
+        production = pd.read_csv("production.csv")
+        return details, switchover, production
+    except Exception as e:
+        st.error(f"Could not load random sample data: {e}")
+        st.stop()
+
 st.title("Facility CO₂ Emissions Optimizer (Batch Level)")
 
-st.header("Step 1: Data Source")
-mode = st.radio("Choose data source:", ["Upload CSV files", "Use Sample Data"])
+mode = st.radio("Choose data source:", ["Upload CSV files", "Use Random Large Sample"])
 
-def generate_sample_data():
-    # Sample equipment (not used in calculation, kept for completeness)
-    equipment = pd.DataFrame({
-        'equipment': [f'Machine-{i+1}' for i in range(4)],
-        'electricity_consumption': np.random.choice([10, 20], 4),
-        'steam_consumption': np.random.choice([0, 5], 4)
-    })
-    # Sample details
-    details = pd.DataFrame({
-        'product_code': ['P001', 'P002', 'P003'],
-        'name': ['Product A', 'Product B', 'Product C'],
-        'running_hours': [10, 12, 8],
-        'total_electricity_consumed': [800, 950, 500],
-        'total_steam_consumed': [150, 180, 80],
-        'batch_size': [500, 600, 400],
-        'batch_unit': ['kg', 'kg', 'kg']
-    })
-    # Sample switchover
-    switchover = pd.DataFrame({
-        'product_code': ['P001', 'P001', 'P002', 'P002', 'P003', 'P003'],
-        'switch_type': ['batch', 'product'] * 3,
-        'switchover_time': [1, 2, 1, 2, 1, 2],
-        'electricity': [10, 20, 12, 22, 8, 18],
-        'steam': [2, 5, 3, 6, 1, 4]
-    })
-    # Sample production
-    production = pd.DataFrame({
-        'product_code': ['P001', 'P002', 'P003'],
-        'number_of_batches': [4, 3, 2]
-    })
-    return equipment, details, switchover, production
+if mode == "Upload CSV files":
+    details_file = st.file_uploader("Upload details.csv", type="csv")
+    switchover_file = st.file_uploader("Upload switchover.csv", type="csv")
+    production_file = st.file_uploader("Upload production.csv", type="csv")
+
+    if details_file and switchover_file and production_file:
+        details = pd.read_csv(details_file)
+        switchover = pd.read_csv(switchover_file)
+        production = pd.read_csv(production_file)
+    else:
+        st.info("Please upload all required files.")
+        st.stop()
+else:
+    details, switchover, production = load_random_sample()
+    st.success("Random large sample data loaded.")
 
 # --- Emission Factor Inputs ---
 st.header("Step 2: Enter Emission Factors & Constraint")
