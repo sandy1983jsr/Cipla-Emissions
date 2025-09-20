@@ -6,24 +6,21 @@ import plotly.express as px
 from emissions import calculate_batch_emissions, total_facility_emissions
 from optimize import optimize_batch_schedule
 
-def generate_random_large_sample(num_products=10, min_batches=4, max_batches=12, random_seed=42):
+def generate_random_large_sample(num_products=40, min_batches=10, max_batches=40, random_seed=42):
     np.random.seed(random_seed)
-
-    # Generate Products and Details
-    products = [f"P{str(i+1).zfill(3)}" for i in range(num_products)]
-    product_names = [f"Product {chr(65+i)}" for i in range(num_products)]
+    products = [f"P{str(i+1).zfill(4)}" for i in range(num_products)]
+    product_names = [f"Product {i+1}" for i in range(num_products)]
 
     details = pd.DataFrame({
         'product_code': products,
         'name': product_names,
-        'running_hours': np.random.randint(6, 16, size=num_products),
+        'running_hours': np.random.randint(2, 16, size=num_products),
         'total_electricity_consumed': np.random.randint(400, 1200, size=num_products),
         'total_steam_consumed': np.random.randint(50, 250, size=num_products),
         'batch_size': np.random.randint(200, 1000, size=num_products),
         'batch_unit': ['kg'] * num_products
     })
 
-    # Switchover Data
     switchover_rows = []
     for p in products:
         for sw_type in ['batch', 'product']:
@@ -36,13 +33,12 @@ def generate_random_large_sample(num_products=10, min_batches=4, max_batches=12,
             })
     switchover = pd.DataFrame(switchover_rows)
 
-    # Production Plan (random batch count)
     production = pd.DataFrame({
         'product_code': products,
         'number_of_batches': np.random.randint(min_batches, max_batches+1, size=num_products)
     })
 
-    # Expand batches and shuffle (for initial base schedule, not used for optimizer, just to show shuffled input)
+    # For preview: shuffled list of batches
     batches = []
     for i, row in production.iterrows():
         prod = row['product_code']
@@ -68,7 +64,6 @@ with col4:
 with col5:
     allowed_time_var = st.slider("Allowed Schedule Time Variation (%)", 0, 50, 10, 1) / 100
 
-# --- Data Load ---
 if mode == "Upload CSV files":
     st.header("Step 3: Upload Data")
     col1, col2 = st.columns(2)
@@ -83,7 +78,6 @@ if mode == "Upload CSV files":
         details = pd.read_csv(details_file)
         switchover = pd.read_csv(switchover_file)
         production = pd.read_csv(production_file)
-        # Generate a shuffled batch schedule for display only (not used by optimizer)
         batches = []
         for i, row in production.iterrows():
             prod = row['product_code']
@@ -101,6 +95,7 @@ else:
 # --- Show sample of the shuffled batch schedule ---
 st.header("Step 3: Initial (Shuffled) Batch Schedule Preview")
 st.dataframe(shuffled_df.head(30))
+st.write(f"Total batches: {len(shuffled_df)}")
 
 # --- Base Emissions (using shuffled_df as base order) ---
 base_schedule = shuffled_df.copy()
@@ -108,9 +103,12 @@ base_emissions_df = calculate_batch_emissions(base_schedule, details, switchover
 base_total = total_facility_emissions(base_emissions_df)
 
 # --- Optimized Emissions ---
-best_schedule, best_emissions_df = optimize_batch_schedule(
-    details, switchover, production, steam_ef, elec_ef, allowed_time_var
-)
+@st.cache_data
+def run_optimizer(details, switchover, production, steam_ef, elec_ef, allowed_time_var):
+    return optimize_batch_schedule(details, switchover, production, steam_ef, elec_ef, allowed_time_var)
+
+st.write("Optimizing schedule...please wait for large datasets.")
+best_schedule, best_emissions_df = run_optimizer(details, switchover, production, steam_ef, elec_ef, allowed_time_var)
 opt_total = total_facility_emissions(best_emissions_df)
 
 st.header("Step 4: Emissions Comparison")
