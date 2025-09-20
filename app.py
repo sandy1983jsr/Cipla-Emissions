@@ -1,39 +1,62 @@
 import streamlit as st
 import pandas as pd
+import numpy as np
 import plotly.express as px
 
 from emissions import calculate_batch_emissions, total_facility_emissions
 from optimize import optimize_batch_schedule
 
-def load_random_sample():
-    try:
-        details = pd.read_csv("details.csv")
-        switchover = pd.read_csv("switchover.csv")
-        production = pd.read_csv("production.csv")
-        return details, switchover, production
-    except Exception as e:
-        st.error(f"Could not load random sample data: {e}")
-        st.stop()
+def generate_random_large_sample(num_products=10, min_batches=4, max_batches=12, random_seed=42):
+    np.random.seed(random_seed)
+
+    # Generate Products and Details
+    products = [f"P{str(i+1).zfill(3)}" for i in range(num_products)]
+    product_names = [f"Product {chr(65+i)}" for i in range(num_products)]
+
+    details = pd.DataFrame({
+        'product_code': products,
+        'name': product_names,
+        'running_hours': np.random.randint(6, 16, size=num_products),
+        'total_electricity_consumed': np.random.randint(400, 1200, size=num_products),
+        'total_steam_consumed': np.random.randint(50, 250, size=num_products),
+        'batch_size': np.random.randint(200, 1000, size=num_products),
+        'batch_unit': ['kg'] * num_products
+    })
+
+    # Switchover Data
+    switchover_rows = []
+    for p in products:
+        for sw_type in ['batch', 'product']:
+            switchover_rows.append({
+                'product_code': p,
+                'switch_type': sw_type,
+                'switchover_time': np.random.randint(1, 4),
+                'electricity': np.random.randint(10, 50),
+                'steam': np.random.randint(2, 15)
+            })
+    switchover = pd.DataFrame(switchover_rows)
+
+    # Production Plan (random batch count)
+    production = pd.DataFrame({
+        'product_code': products,
+        'number_of_batches': np.random.randint(min_batches, max_batches+1, size=num_products)
+    })
+
+    # Expand batches and shuffle (for initial base schedule, not used for optimizer, just to show shuffled input)
+    batches = []
+    for i, row in production.iterrows():
+        prod = row['product_code']
+        for b in range(row['number_of_batches']):
+            batches.append({'product_code': prod, 'batch_num': b+1})
+    batch_df = pd.DataFrame(batches)
+    shuffled_df = batch_df.sample(frac=1, random_state=random_seed).reset_index(drop=True)
+
+    return details, switchover, production, shuffled_df
 
 st.title("Facility CO₂ Emissions Optimizer (Batch Level)")
 
+st.header("Step 1: Data Source")
 mode = st.radio("Choose data source:", ["Upload CSV files", "Use Random Large Sample"])
-
-if mode == "Upload CSV files":
-    details_file = st.file_uploader("Upload details.csv", type="csv")
-    switchover_file = st.file_uploader("Upload switchover.csv", type="csv")
-    production_file = st.file_uploader("Upload production.csv", type="csv")
-
-    if details_file and switchover_file and production_file:
-        details = pd.read_csv(details_file)
-        switchover = pd.read_csv(switchover_file)
-        production = pd.read_csv(production_file)
-    else:
-        st.info("Please upload all required files.")
-        st.stop()
-else:
-    details, switchover, production = load_random_sample()
-    st.success("Random large sample data loaded.")
 
 # --- Emission Factor Inputs ---
 st.header("Step 2: Enter Emission Factors & Constraint")
@@ -50,33 +73,37 @@ if mode == "Upload CSV files":
     st.header("Step 3: Upload Data")
     col1, col2 = st.columns(2)
     with col1:
-        equipment_file = st.file_uploader("Upload equipment.csv", type="csv")
         details_file = st.file_uploader("Upload details.csv", type="csv")
-    with col2:
         switchover_file = st.file_uploader("Upload switchover.csv", type="csv")
+    with col2:
         production_file = st.file_uploader("Upload production.csv", type="csv")
 
     data_ready = all([details_file, switchover_file, production_file])
     if data_ready:
-        equipment = pd.read_csv(equipment_file) if equipment_file else pd.DataFrame()
         details = pd.read_csv(details_file)
         switchover = pd.read_csv(switchover_file)
         production = pd.read_csv(production_file)
+        # Generate a shuffled batch schedule for display only (not used by optimizer)
+        batches = []
+        for i, row in production.iterrows():
+            prod = row['product_code']
+            for b in range(row['number_of_batches']):
+                batches.append({'product_code': prod, 'batch_num': b+1})
+        batch_df = pd.DataFrame(batches)
+        shuffled_df = batch_df.sample(frac=1, random_state=42).reset_index(drop=True)
     else:
-        st.info("Please upload all required files (equipment optional).")
+        st.info("Please upload all required files.")
         st.stop()
-
 else:
-    equipment, details, switchover, production = generate_sample_data()
-    st.success("Sample data loaded.")
+    details, switchover, production, shuffled_df = generate_random_large_sample()
+    st.success("Random large sample data generated and loaded.")
 
-# --- Base Emissions ---
-batch_df = []
-for _, row in production.iterrows():
-    for i in range(int(row['number_of_batches'])):
-        batch_df.append({'product_code': row['product_code'], 'batch_num': i+1})
-batch_df = pd.DataFrame(batch_df)
-base_schedule = batch_df.copy()
+# --- Show sample of the shuffled batch schedule ---
+st.header("Step 3: Initial (Shuffled) Batch Schedule Preview")
+st.dataframe(shuffled_df.head(30))
+
+# --- Base Emissions (using shuffled_df as base order) ---
+base_schedule = shuffled_df.copy()
 base_emissions_df = calculate_batch_emissions(base_schedule, details, switchover, steam_ef, elec_ef)
 base_total = total_facility_emissions(base_emissions_df)
 
@@ -89,28 +116,28 @@ opt_total = total_facility_emissions(best_emissions_df)
 st.header("Step 4: Emissions Comparison")
 col_left, col_right = st.columns(2)
 with col_left:
-    st.subheader("Base Schedule")
+    st.subheader("Base (Shuffled) Schedule")
     st.metric("Total Facility Emissions (kg CO₂)", f"{base_total:.2f}")
-    st.dataframe(base_emissions_df[['product_code','batch_num','total_emissions']])
+    st.dataframe(base_emissions_df[['product_code','batch_num','total_emissions']].head(30))
     fig = px.bar(
-        base_emissions_df,
+        base_emissions_df.head(30),
         x='batch_num',
         y='total_emissions',
         color='product_code',
-        title="Emissions per Batch (Base)",
+        title="Emissions per Batch (Base, first 30)"
     )
     st.plotly_chart(fig, use_container_width=True)
 
 with col_right:
     st.subheader("Optimized Schedule")
     st.metric("Total Facility Emissions (kg CO₂)", f"{opt_total:.2f}")
-    st.dataframe(best_emissions_df[['product_code','batch_num','total_emissions']])
+    st.dataframe(best_emissions_df[['product_code','batch_num','total_emissions']].head(30))
     fig2 = px.bar(
-        best_emissions_df,
+        best_emissions_df.head(30),
         x='batch_num',
         y='total_emissions',
         color='product_code',
-        title="Emissions per Batch (Optimized)"
+        title="Emissions per Batch (Optimized, first 30)"
     )
     st.plotly_chart(fig2, use_container_width=True)
     st.download_button(
@@ -123,6 +150,6 @@ with col_right:
 st.markdown(
     """
     ---
-    _Tip: The optimizer rearranges batches of all products to minimize total CO₂ emissions, including both process and switchover emissions, while keeping total schedule time within the allowed variation._
+    _Tip: The optimizer rearranges batches of all products to minimize total CO₂ emissions, including both process and switchover emissions, while keeping total schedule time within the allowed variation. The base schedule shown is a random shuffled sequence of all batches, not sequential by product._
     """
 )
