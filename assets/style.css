@@ -1,0 +1,172 @@
+/* === Consulting-grade Dashboard Theme: Orange, White, Grey === */
+
+/* Palette */
+:root {
+  --main-orange: #FF7900;
+  --light-orange: #FFE5CC;
+  --main-grey: #3C3C3B;
+  --light-grey: #F5F5F5;
+  --mid-grey: #BABABA;
+  --white: #FFFFFF;
+}
+
+/* General Body */
+body, .dash-app {
+  background-color: var(--light-grey);
+  font-family: 'Segoe UI', 'Roboto', 'Arial', sans-serif;
+  color: var(--main-grey);
+}
+
+/* Headings */
+h1, h2, h3, h4 {
+  color: var(--main-orange);
+  letter-spacing: 1px;
+  font-weight: 700;
+}
+
+h1 {
+  font-size: 2.2rem;
+  margin-bottom: 0.5rem;
+}
+
+h2 {
+  font-size: 1.6rem;
+  margin-top: 1.5rem;
+  margin-bottom: 0.5rem;
+}
+
+/* Section styling */
+hr {
+  border: 0;
+  height: 1px;
+  background: var(--mid-grey);
+  margin: 2rem 0;
+}
+
+label {
+  font-weight: 500;
+  color: var(--main-grey);
+  margin-top: 0.8em;
+}
+
+/* Buttons */
+button, .dash-button, input[type="submit"] {
+  background-color: var(--main-orange);
+  color: var(--white);
+  border: none;
+  border-radius: 5px;
+  padding: 0.5em 1.4em;
+  margin: 0.2em 0.8em 0.2em 0;
+  font-size: 1rem;
+  font-weight: bold;
+  box-shadow: 0 2px 6px rgba(60,60,59,0.08);
+  transition: background 0.2s;
+  cursor: pointer;
+}
+
+button:hover, .dash-button:hover, input[type="submit"]:hover {
+  background-color: #e67300;
+}
+
+/* Inputs & Selects */
+input, select, .Select-control, .dash-dropdown {
+  border: 1px solid var(--mid-grey);
+  border-radius: 4px;
+  padding: 0.35em 0.7em;
+  margin-bottom: 0.6em;
+  background: var(--white);
+  font-size: 1em;
+  color: var(--main-grey);
+}
+
+/* DataTable: orange accent, white background, grey grid */
+.dash-table-container .dash-spreadsheet-container {
+  background: var(--white);
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(60,60,59,0.10);
+}
+
+.dash-table-container table {
+  border-collapse: collapse;
+  width: 100%;
+  font-size: 1em;
+}
+
+.dash-table-container th, 
+.dash-table-container td {
+  border: 1px solid var(--mid-grey);
+  padding: 0.7em 1.2em;
+}
+
+.dash-table-container th {
+  background: var(--light-orange);
+  color: var(--main-grey);
+  font-weight: 700;
+}
+
+.dash-table-container tr:nth-child(even) {
+  background-color: var(--light-grey);
+}
+
+.dash-table-container tr:nth-child(odd) {
+  background: var(--white);
+}
+
+/* Graphs: override Plotly default colors */
+.js-plotly-plot .plotly {
+  background: var(--white) !important;
+  border-radius: 10px;
+  box-shadow: 0 2px 8px rgba(60,60,59,0.08);
+}
+
+.js-plotly-plot .main-svg {
+  background: var(--white) !important;
+}
+
+.legend text {
+  fill: var(--main-grey) !important;
+}
+
+/* Upload section */
+.dcc-Upload {
+  border: 2px dashed var(--main-orange);
+  background: var(--light-orange);
+  color: var(--main-grey);
+  border-radius: 8px;
+  padding: 1em 2em;
+  margin-bottom: 1em;
+  text-align: center;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.dcc-Upload:hover {
+  background: #ffd6ad;
+}
+
+#file-status {
+  color: var(--main-grey);
+  margin-bottom: 1em;
+  font-size: 1.05em;
+  font-weight: 500;
+}
+
+/* Responsive Layout */
+@media (max-width: 700px) {
+  .dash-table-container th, .dash-table-container td {
+    padding: 0.4em 0.5em;
+    font-size: 0.9em;
+  }
+  h1, h2 {
+    font-size: 1.1em;
+  }
+}
+
+::-webkit-scrollbar {
+  width: 7px;
+  background: var(--light-grey);
+}
+::-webkit-scrollbar-thumb {
+  background: var(--mid-grey);
+  border-radius: 5px;
+}
