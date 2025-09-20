@@ -122,7 +122,7 @@ def optimize_schedule(equipment, details, switchover, production, steam_ef, elec
 if st.button("Calculate Emissions"):
     results = calculate_schedule_emissions(equipment, details, switchover, production, steam_ef, elec_ef)
     total = total_emissions(results)
-    st.subheader("CO2 Emissions for Current Schedule")
+    st.subheader(f"Original Total CO₂ Emissions for Facility: {total:.2f} kg")
     st.dataframe(results[['product_code', 'name', 'number_of_batches', 'total_emissions']])
     fig = px.bar(
         results,
@@ -137,11 +137,10 @@ if st.button("Optimize Schedule & Calculate Emissions"):
     opt_production = optimize_schedule(equipment, details, switchover, production, steam_ef, elec_ef, allowed_time_var)
     results_opt = calculate_schedule_emissions(equipment, details, switchover, opt_production, steam_ef, elec_ef)
     total_opt = total_emissions(results_opt)
-    st.subheader("Optimized Production Schedule")
+    st.subheader(f"Optimized Total CO₂ Emissions for Facility: {total_opt:.2f} kg")
     st.dataframe(opt_production)
     csv = opt_production.to_csv(index=False)
     st.download_button("Download Optimized Schedule as CSV", csv, file_name="optimized_production.csv", mime="text/csv")
-    st.subheader("CO2 Emissions for Optimized Schedule")
     st.dataframe(results_opt[['product_code', 'name', 'number_of_batches', 'total_emissions']])
     fig_opt = px.bar(
         results_opt,
